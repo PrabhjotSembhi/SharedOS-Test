@@ -278,3 +278,74 @@ console.log("Expected: files.create hidden");
 console.log(
   cataloguePassed ? "PASS" : "FAIL",
 );
+
+
+// --------------------------------------------------
+// TEST 6: Expired grant
+// --------------------------------------------------
+
+const expiredGrant = {
+  ...grant,
+
+  id: "expired-grant",
+
+  constraints: {
+    ...grant.constraints,
+
+    expiresAt: new Date(Date.now() - 1000).toISOString(),
+  },
+};
+
+const expiredKernel = new SharedOSKernel({
+  grantSource: {
+    async load(access) {
+      return [expiredGrant].filter(
+        (candidate) =>
+          candidate.namespaceId === access.namespaceId &&
+          JSON.stringify(candidate.subject) ===
+            JSON.stringify(access.actor) &&
+          JSON.stringify(candidate.issuer) ===
+            JSON.stringify(access.authority),
+      );
+    },
+  },
+
+  authorizer: new CapabilityAuthorizer({
+    usageStore: new InMemoryGrantUsageStore(),
+  }),
+});
+
+expiredKernel.registerResourceProvider(files);
+
+registerStandardOsTools(expiredKernel, { files });
+
+const expiredResult = await expiredKernel.invokeTool(context, {
+  id: crypto.randomUUID(),
+
+  tool: "files.search",
+
+  arguments: {
+    path: ["Work", "Projects", "atlas"],
+    query: "ship date",
+  },
+
+  traceId: context.traceId,
+
+  requestedAt: new Date().toISOString(),
+});
+
+console.log("\nTEST 6 — Expired grant");
+
+console.log("Expected: denied");
+
+console.log(
+  "Actual:",
+  expiredResult.status,
+  expiredResult.error?.code ?? "",
+);
+
+console.log(
+  expiredResult.status === "denied"
+    ? "PASS"
+    : "FAIL",
+);
