@@ -252,3 +252,29 @@ const actionPassed =
   actionEscalation.status === "denied";
 
 console.log(actionPassed ? "PASS" : "FAIL");
+
+
+// --------------------------------------------------
+// TEST 5: Effective tool catalogue
+// --------------------------------------------------
+
+const visibleTools = await kernel.listTools(context);
+
+const toolNames = visibleTools.map(({ name }) => name);
+
+console.log("\nTEST 5 — Effective tool catalogue");
+
+console.log("Visible tools:", toolNames);
+
+const searchVisible = toolNames.includes("files.search");
+const createHidden = !toolNames.includes("files.create");
+
+const cataloguePassed =
+  searchVisible && createHidden;
+
+console.log("Expected: files.search visible");
+console.log("Expected: files.create hidden");
+
+console.log(
+  cataloguePassed ? "PASS" : "FAIL",
+);
